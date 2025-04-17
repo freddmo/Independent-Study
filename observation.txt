@@ -1,0 +1,53 @@
+## Problem Definition
+
+Depot
+Each customer has a demand
+All vehicles have a capcity
+there is a distance between nodes
+
+Goal:
+the route starts at the depot and ends at the depot
+the customer is visited extacly once
+demand on each route must be less than vehicle capacity
+total distance is minimized
+
+## State
+
+Time T and State S:
+- Current vehicle position: p
+- Remaining vehicle capacity: c
+- Set of Unvisited customers: U
+
+S = (p,cp,U)
+
+## Action
+
+choose action a which is:
+1. Go to a customer j in a set of univisted customers.
+2. Return to a depot if no more customer can be served.
+
+## Transition
+
+Two type of transitions:
+- Go to a customer:
+    - New position for customer: position+1 = j
+    - Remaining capacity: c+1 = capacity -demand
+    - Updated unvisited customer: Remove customer j from set of unvisited customers.
+  St+1 = (j,capacity -demand,Remove customer j from set of unvisited customers.)
+
+- Return to the depot:
+    - New position: p+1 = 0
+    - Refill capacity: c+1 = Q(vehicle reloaded)
+    - Unvisited customers remain the same: U+1 = U
+  St+1 = (0,Q,U)
+
+## Cost
+
+Inmediate cost: Ct
+Total Cost: Sum of all distances.
+
+# Value Function
+
+# Policy 
+
+choose the action that minimize the total(inmediate+future) cost
