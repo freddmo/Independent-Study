@@ -56,8 +56,8 @@ def prepare_inputs(node_coords, demands, config, device):
 
     return x_edges, x_edges_values, x_nodes, x_nodes_coord, coords
 
-# -------------------- Plot Heatmap --------------------
-def plot_heatmap(heat, coords, title="Predicted Heatmap"):
+# -------------------- Plot and Save Heatmap --------------------
+def plot_heatmap(heat, coords, title="Predicted Heatmap", save_path=None):
     fig, ax = plt.subplots(figsize=(8, 8))
     N = len(coords)
     coords = np.array(coords)
@@ -73,10 +73,15 @@ def plot_heatmap(heat, coords, title="Predicted Heatmap"):
     ax.set_title(title)
     ax.legend()
     plt.grid(True)
-    plt.show()
+    if save_path:
+        plt.savefig(save_path)
+        print(f"Heatmap saved to {save_path}")
+        plt.close()
+    else:
+        plt.show()
 
 # -------------------- Evaluation Script --------------------
-def evaluate_model(model_path, vrp_path, config_path, device='cpu'):
+def evaluate_model(model_path, vrp_path, config_path, device='cpu', save_dir=None):
     config = load_config(config_path)
     model = ResidualGatedGCNModelVRP(config, torch.float32, torch.long)
     model.load_state_dict(torch.load(model_path, map_location=device))
@@ -87,15 +92,25 @@ def evaluate_model(model_path, vrp_path, config_path, device='cpu'):
 
     with torch.no_grad():
         y_pred_edges, _ = model(x_edges, x_edges_values, x_nodes, x_nodes_coord)
-        heat = torch.softmax(y_pred_edges[0], dim=-1)[:, :, 1].cpu().numpy()  # heat = P(edge_class == 1)
+        heat = torch.softmax(y_pred_edges[0], dim=-1)[:, :, 1].cpu().numpy()
 
-    plot_heatmap(heat, coords, title=f"Heatmap for {os.path.basename(vrp_path)}")
+    filename = os.path.basename(vrp_path).replace('.vrp', '_heatmap.png')
+    save_path = os.path.join(save_dir, filename) if save_dir else None
+    plot_heatmap(heat, coords, title=f"Heatmap for {os.path.basename(vrp_path)}", save_path=save_path)
 
 # -------------------- Run --------------------
 if __name__ == "__main__":
     model_path = "model_epoch_10.pt"
-    vrp_path = r"C:\\Users\\SAC\\Documents\\Freddy_Folder\\FAU\\Spring 2025\\Independent Study\\vrp_nazari100_validation_seed4321-lkh\\0001.lkh1.vrp"
     config_path = "configs/vrp.json"
+    input_folder = r"C:\\Users\\SAC\\Documents\\Freddy_Folder\\FAU\\Spring 2025\\Independent Study\\vrp_nazari100_validation_seed4321-lkh"
+    output_dir = "saved_heatmaps"
 
+    os.makedirs(output_dir, exist_ok=True)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    evaluate_model(model_path, vrp_path, config_path, device=device)
+
+    vrp_files = [f for f in os.listdir(input_folder) if f.endswith(".vrp")]
+    vrp_files.sort()
+
+    for vrp_file in vrp_files:
+        vrp_path = os.path.join(input_folder, vrp_file)
+        evaluate_model(model_path, vrp_path, config_path, device=device, save_dir=output_dir)
